@@ -26,7 +26,8 @@ public class AdvisingService {
 
     private static final String QUESTION_SYSTEM = """
             너는 업무 자동화 어드바이저다. 아래 '자동화 추천 아젠다'와 근거 지표를 보고,
-            이 업무를 실제로 자동화/에이전트화하려면 사용자에게 추가로 물어봐야 할 질문들을 생성하라.
+            이 업무를 실제로 자동화/에이전트화하려면 사용자에게 추가로 물어봐야 할 질문 중
+            가장 중요한 것 최대 3개만 생성하라.
             관측 데이터만으로는 알 수 없는 입력값·매핑·규칙·일정·예외처리 등을 질문화한다.
             반드시 JSON 객체로만 응답: {"questions":[{"field":"","question":"","why":""}]}. 한국어로 작성.
             """;
@@ -60,7 +61,8 @@ public class AdvisingService {
     public QuestionsResponse generateQuestions(UUID agendaId) {
         EfficiencyAgendaView agenda = loadAgenda(agendaId);
         QuestionList out = llmClient.completeAsJson(QUESTION_SYSTEM, agendaContext(agenda), QuestionList.class);
-        List<GeneratedQuestion> questions = out.questions() == null ? List.of() : out.questions();
+        List<GeneratedQuestion> questions = (out.questions() == null ? List.<GeneratedQuestion>of() : out.questions())
+                .stream().limit(3).toList();   // 최대 3개 보장
         return new QuestionsResponse(agendaId, questions);
     }
 
