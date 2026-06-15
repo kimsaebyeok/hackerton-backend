@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>분석 스키마 샘플 데이터</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f7f7f5; --text: #1a1a18; --muted: #6b6b66;
+    --border: #e2e2dd; --accent: #534ab7; --accent-bg: #eeedfe;
+    --coral: #993c1d; --coral-bg: #faece7; --teal: #0f6e56; --teal-bg: #e1f5ee;
+    --code-bg: #f4f3ef;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.7;
+    max-width: 960px; margin: 0 auto; padding: 40px 28px 80px;
+  }
+  h1 { font-size: 26px; font-weight: 600; margin: 0 0 6px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 44px 0 14px; padding-top: 18px; border-top: 2px solid var(--border); }
+  h3 { font-size: 15px; font-weight: 600; margin: 22px 0 8px; color: var(--muted); }
+  p { margin: 10px 0; }
+  .lead { color: var(--muted); font-size: 15px; }
+  .scenario {
+    background: var(--accent-bg); border-left: 4px solid var(--accent);
+    padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 22px 0; font-size: 15px;
+  }
+  .scenario b { color: var(--accent); }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0 18px; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--surface); font-weight: 600; white-space: nowrap; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; font-size: 13px;
+    font-family: "SF Mono", Menlo, Consolas, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.55;
+    font-family: "SF Mono", Menlo, Consolas, monospace; }
+  pre .k { color: var(--accent); }
+  .pill { display: inline-block; background: var(--teal-bg); color: var(--teal);
+    border-radius: 6px; padding: 1px 8px; font-size: 12px; font-weight: 500; }
+  .flow { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 20px; margin: 16px 0; }
+  .flow li { margin: 8px 0; }
+  .kv td:first-child { width: 200px; font-weight: 500; background: var(--surface); white-space: nowrap; }
+  .dim { color: var(--muted); text-align: center; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>분석 스키마 샘플 데이터</h1>
+<p class="lead">하나의 시나리오를 raw 이벤트부터 최종 산출물까지 한 줄기로 꿰어, 6개 테이블에 모두 채운 예시입니다. "이 행동 → 이 데이터 → 이 추천"이 그대로 따라가집니다.</p>
+
+<div class="scenario">
+📖 <b>샘플 시나리오</b> — 2026-06-15 오전, 한 직원이 35분간 <b>관리자 포털에서 사건 데이터를 확인 → Google Sheets에 옮겨 적기</b>를 3번 반복하고, 중간에 Gmail을 한 번 확인했다.
+</div>
+
+<h2>① domain_category_map <span class="muted" style="font-size:14px;font-weight:400">— 설정 (미리 채워둔 사전)</span></h2>
+<table>
+<tr><th>pattern</th><th>category</th></tr>
+<tr><td><code>admin.lawcompany.co.kr</code></td><td>admin_internal</td></tr>
+<tr><td><code>sheets.google.com</code></td><td>spreadsheet</td></tr>
+<tr><td><code>mail.google.com</code></td><td>comm_channel</td></tr>
+<tr><td><code>docs.google.com</code></td><td>editor</td></tr>
+<tr><td><code>google.com</code></td><td>search</td></tr>
+</table>
+
+<h2>② work_session <span class="muted" style="font-size:14px;font-weight:400">— 수집 세션 1건</span></h2>
+<div class="scroll">
+<table>
+<tr><th>session_id</th><th>user_id</th><th>started_at</th><th>ended_at</th><th>active_duration_ms</th><th>event_count</th><th>status</th></tr>
+<tr><td><code>a1…0001</code></td><td class="dim">null</td><td>2026-06-15 10:00:00+09</td><td>2026-06-15 10:35:00+09</td><td class="num">356000</td><td class="num">18</td><td>analyzed</td></tr>
+</table>
+</div>
+
+<h2>③ work_log_event <span class="muted" style="font-size:14px;font-weight:400">— 원시 행동로그 (핵심)</span></h2>
+<p><code>type</code>에 따라 채워지는 컬럼이 다릅니다. nav/tab엔 <code>title</code>, dwell엔 <code>duration_ms</code>, click엔 <code>tag/role/label</code>만 채워지고 나머지는 <span class="dim">null(–)</span>.</p>
+<div class="scroll">
+<table>
+<tr><th>#</th><th>event_time</th><th>type</th><th>tab</th><th>domain</th><th>safe_url (path)</th><th>title</th><th>duration_ms</th><th>tag·role·label</th></tr>
+<tr><td>1</td><td>10:00:05</td><td>navigation_completed</td><td>1</td><td>admin</td><td>/cases/list</td><td>사건 목록 - 관리자</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>2</td><td>10:00:38</td><td>click</td><td>1</td><td>admin</td><td>/cases/list</td><td class="dim">–</td><td class="dim">–</td><td>button·button·"데이터 조회"</td></tr>
+<tr><td>3</td><td>10:00:50</td><td>dwell_time</td><td>1</td><td>admin</td><td>/cases/list</td><td class="dim">–</td><td class="num">45000</td><td class="dim">–</td></tr>
+<tr><td>4</td><td>10:00:52</td><td>navigation_completed</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td>사건정리 - Google Sheets</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>5</td><td>10:01:30</td><td>click</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td class="dim">–</td><td class="dim">–</td><td>div·textbox·"셀 입력"</td></tr>
+<tr><td>6</td><td>10:01:55</td><td>dwell_time</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td class="dim">–</td><td class="num">63000</td><td class="dim">–</td></tr>
+<tr><td>7</td><td>10:01:56</td><td>tab_activated</td><td>1</td><td>admin</td><td>/cases/list</td><td>사건 목록 - 관리자</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>8</td><td>10:02:30</td><td>dwell_time</td><td>1</td><td>admin</td><td>/cases/list</td><td class="dim">–</td><td class="num">34000</td><td class="dim">–</td></tr>
+<tr><td>9</td><td>10:02:31</td><td>tab_activated</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td>사건정리 - Google Sheets</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>10</td><td>10:03:10</td><td>click</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td class="dim">–</td><td class="dim">–</td><td>div·textbox·"셀 입력"</td></tr>
+<tr><td>11</td><td>10:03:20</td><td>dwell_time</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td class="dim">–</td><td class="num">49000</td><td class="dim">–</td></tr>
+<tr><td>12</td><td>10:03:21</td><td>tab_activated</td><td>1</td><td>admin</td><td>/cases/list</td><td>사건 목록 - 관리자</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>13</td><td>10:03:55</td><td>dwell_time</td><td>1</td><td>admin</td><td>/cases/list</td><td class="dim">–</td><td class="num">34000</td><td class="dim">–</td></tr>
+<tr><td>14</td><td>10:03:56</td><td>tab_activated</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td>사건정리 - Google Sheets</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>15</td><td>10:04:25</td><td>dwell_time</td><td>2</td><td>sheets</td><td>/spreadsheets/d/abc</td><td class="dim">–</td><td class="num">41000</td><td class="dim">–</td></tr>
+<tr><td>16</td><td>10:05:00</td><td>navigation_completed</td><td>3</td><td>mail</td><td>/mail/u/0</td><td>받은편지함 - Gmail</td><td class="dim">–</td><td class="dim">–</td></tr>
+<tr><td>17</td><td>10:06:30</td><td>dwell_time</td><td>3</td><td>mail</td><td>/mail/u/0</td><td class="dim">–</td><td class="num">90000</td><td class="dim">–</td></tr>
+<tr><td>18</td><td>10:06:31</td><td>tab_activated</td><td>1</td><td>admin</td><td>/cases/list</td><td>사건 목록 - 관리자</td><td class="dim">–</td><td class="dim">–</td></tr>
+</table>
+</div>
+<p class="muted" style="font-size:13px">※ <code>domain</code>은 표에선 줄였지만 실제론 <code>admin.lawcompany.co.kr</code> 전체가 들어갑니다. <code>event_id</code>도 행마다 UUID(<code>ev…0001</code>~<code>0018</code>).</p>
+
+<h2>④ analysis_report <span class="muted" style="font-size:14px;font-weight:400">— 토니가 위 18개를 계산한 결과</span></h2>
+<h3>metrics (JSONB) — 6렌즈, 전부 ③에서 계산된 값</h3>
+<pre>{
+  "scope": "session", "refId": "a1...0001",
+
+  "domainVisits": [
+    {"domain":"admin.lawcompany.co.kr","category":"admin_internal","visits":4},
+    {"domain":"sheets.google.com","category":"spreadsheet","visits":3},
+    {"domain":"mail.google.com","category":"comm_channel","visits":1}
+  ],
+  "pageRevisits": [
+    {"safeUrl":"https://admin.lawcompany.co.kr/cases/list","title":"사건 목록 - 관리자","revisits":4}
+  ],
+  "repeatedClicks": [
+    {"domain":"sheets.google.com","label":"셀 입력","tag":"div","role":"textbox","count":2}
+  ],
+
+  "timeByDomain": [
+    {"domain":"sheets.google.com","category":"spreadsheet","totalMs":153000},
+    {"domain":"admin.lawcompany.co.kr","category":"admin_internal","totalMs":113000},
+    {"domain":"mail.google.com","category":"comm_channel","totalMs":90000}
+  ],
+  "timeOfDayHist": [0,0,0,0,0,0,0,0,0,0,18,0,0,0,0,0,0,0,0,0,0,0,0,0],
+  "totalActiveMs": 356000,
+  "estimatedSavingMsPerDay": 1080000,
+
+  "repeatedCycles": [
+    {"cycle":["admin.lawcompany.co.kr","sheets.google.com"],"occurrences":3,
+     "avgDurationMs":88667,"totalDurationMs":266000,"taskIds":["7a...0001"]}
+  ],
+  "topNgrams": [{"sequence":["admin_internal","spreadsheet"],"count":3}],
+
+  "toolSwitchCount": 7,
+  "transitionMatrix": [
+    {"from":"admin.lawcompany.co.kr","to":"sheets.google.com","count":3},
+    {"from":"sheets.google.com","to":"admin.lawcompany.co.kr","count":2},
+    {"from":"sheets.google.com","to":"mail.google.com","count":1},
+    {"from":"mail.google.com","to":"admin.lawcompany.co.kr","count":1}
+  ],
+  "pingPongScore": 0.78,
+  "switchingEntropy": 0.34,
+
+  "domainConcentration": [
+    {"domain":"sheets.google.com","share":0.43},
+    {"domain":"admin.lawcompany.co.kr","share":0.317},
+    {"domain":"mail.google.com","share":0.253}
+  ],
+  "multitaskingIndex": 1.08,
+
+  "recurringTasks": [
+    {"signature":"admin_internal&gt;spreadsheet","daysObserved":["2026-06-15"],"occurrences":3}
+  ]
+}</pre>
+
+<h3>tasks (JSONB) — 탐지된 작업 1건 (반복 사이클 묶음)</h3>
+<pre>[
+  {
+    "taskId":"7a...0001", "sessionId":"a1...0001",
+    "startTs":1781485205000, "endTs":1781485465000,
+    "domainSequence":["admin.lawcompany.co.kr","sheets.google.com",
+                      "admin.lawcompany.co.kr","sheets.google.com",
+                      "admin.lawcompany.co.kr","sheets.google.com"],
+    "signature":"admin_internal&gt;spreadsheet",
+    "steps":[
+      {"stepId":"s1","order":1,"domain":"admin.lawcompany.co.kr","domainCategory":"admin_internal",
+       "safeUrl":"https://admin.lawcompany.co.kr/cases/list","title":"사건 목록 - 관리자",
+       "durationMs":45000,"clickCount":1,
+       "topElements":[{"label":"데이터 조회","tag":"button","role":"button","count":1}]},
+      {"stepId":"s2","order":2,"domain":"sheets.google.com","domainCategory":"spreadsheet",
+       "safeUrl":"https://sheets.google.com/spreadsheets/d/abc","title":"사건정리 - Google Sheets",
+       "durationMs":63000,"clickCount":1,
+       "topElements":[{"label":"셀 입력","tag":"div","role":"textbox","count":1}]}
+    ]
+  }
+]</pre>
+
+<h2>⑤ efficiency_agenda <span class="muted" style="font-size:14px;font-weight:400">— 분석에서 나온 추천 1건</span></h2>
+<table class="kv">
+<tr><td>agenda_id</td><td><code>c1…0001</code></td></tr>
+<tr><td>report_id</td><td><code>b1…0001</code></td></tr>
+<tr><td>archetype</td><td><span class="pill">data_transfer</span></td></tr>
+<tr><td>title</td><td>관리자 포털 ↔ Google Sheets 데이터 이관 자동화</td></tr>
+<tr><td>one_liner</td><td>관리자 포털에서 데이터를 확인하고 Sheets에 옮겨 적는 반복 작업</td></tr>
+<tr><td>automation_score</td><td>0.86</td></tr>
+<tr><td>est_saving_min_day</td><td>18</td></tr>
+<tr><td>priority_score</td><td>0.81</td></tr>
+</table>
+
+<h3>evidence (JSONB) — 카드에 박힐 "데이터적 근거", 전부 ④에서 나온 숫자</h3>
+<pre>{
+  "metrics": [
+    {"key":"repeatedCycles","label":"반복 왕복","value":3,"unit":"회"},
+    {"key":"toolSwitch","label":"툴 전환","value":7,"unit":"회"},
+    {"key":"pingPong","label":"핑퐁 지수","value":0.78,"unit":""},
+    {"key":"cycleTime","label":"세션 내 소요","value":4.4,"unit":"분"}
+  ],
+  "sourceTaskIds": ["7a...0001"],
+  "timeWindow": {"startTs":1781485205000, "endTs":1781485465000}
+}</pre>
+
+<h3>agent_spec_draft (JSONB) — 자동 채운 부분 + 부족분(다음에 유저에게 물어볼 질문)</h3>
+<pre>{
+  "goal": "관리자 포털의 사건 데이터를 Google Sheets로 옮겨 적는 작업을 자동화",
+  "triggerObserved": null,
+  "inputsObserved": {
+    "source_tool": "관리자 포털 - 사건 목록",
+    "target_tool": "Google Sheets - 사건정리",
+    "repeated_action": "셀 입력 (2회 관측)"
+  },
+  "toolsUsed": ["admin.lawcompany.co.kr","sheets.google.com"],
+  "missingContext": [
+    {"field":"data_mapping","question":"관리자 포털의 어떤 항목을 Sheets 어느 열에 넣나요?",
+     "why":"입력 값을 수집하지 않아 매핑을 알 수 없음"},
+    {"field":"schedule","question":"이 작업을 얼마나 자주 하시나요?",
+     "why":"세션 1건만 관측됨"}
+  ]
+}</pre>
+
+<h2>⑥ agent_draft <span class="muted" style="font-size:14px;font-weight:400">— 유저가 부족분 입력 후 최종 산출물</span></h2>
+<table class="kv">
+<tr><td>draft_id</td><td><code>d1…0001</code></td></tr>
+<tr><td>agenda_id</td><td><code>c1…0001</code></td></tr>
+<tr><td>user_context</td><td><code>{"data_mapping":"사건번호→A열, 의뢰인→B열, 상태→C열","schedule":"매일 오전 9시"}</code></td></tr>
+<tr><td>spec_markdown</td><td>## 에이전트: 사건 데이터 이관<br>- 목적: 관리자 포털 사건목록을 매일 오전 Sheets에 동기화 …</td></tr>
+<tr><td>context_markdown</td><td>## 업무 맥락<br>- 소스: admin.lawcompany.co.kr/cases/list<br>- 대상: Google Sheets '사건정리' …</td></tr>
+<tr><td>execution_prompt</td><td>너는 사건 데이터 이관 에이전트야. 관리자 포털에서 사건번호·의뢰인·상태를 읽어 …</td></tr>
+</table>
+
+<h2>🔗 한눈에 보는 데이터 흐름</h2>
+<div class="flow">
+<ul>
+<li><b>이벤트 7·9·12·14번</b>(admin↔sheets 탭 전환) → <code>repeatedCycles.occurrences = 3</code> → 카드 근거 <span class="pill">반복 왕복 3회</span></li>
+<li><b>이벤트 3·6·8·11·13·15번</b>(dwell) → <code>timeByDomain</code> 합산 → <span class="pill">세션 내 소요 4.4분</span> → <code>est_saving_min_day</code> 환산</li>
+<li><b>이벤트 5·10번</b>(같은 "셀 입력" 클릭) → <code>repeatedClicks.count = 2</code> → <code>inputsObserved.repeated_action</code></li>
+<li><b>입력값을 안 받음</b> → <code>missingContext</code>의 <code>data_mapping</code> 질문으로 자동 전환 → ⑥에서 유저가 채움</li>
+</ul>
+</div>
+<p>→ 즉 <b>raw 18줄이 추천 1건으로 압축</b>되는 전 과정이 테이블에 그대로 남습니다.</p>
+
+</body>
+</html>

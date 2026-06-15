@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: advisor-postgres
+    environment:
+      POSTGRES_DB: advisor
+      POSTGRES_USER: advisor
+      POSTGRES_PASSWORD: advisor
+    ports:
+      - "5433:5432"   # 호스트 5432는 타 프로젝트가 사용 중 → 5433로 매핑
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U advisor -d advisor"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    container_name: advisor-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 컨테이너 네트워크 내부에서는 postgres 를 서비스명:내부포트(5432)로 접속
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/advisor
+      SPRING_DATASOURCE_USERNAME: advisor
+      SPRING_DATASOURCE_PASSWORD: advisor
+      ADVISOR_LLM_API_KEY: ${ADVISOR_LLM_API_KEY:-}
+    ports:
+      - "8081:8080"   # 호스트 8080은 ssh 터널 점유 → 8081로 매핑
+
+volumes:
+  pgdata:

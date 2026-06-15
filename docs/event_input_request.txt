@@ -1,0 +1,35 @@
+type WorkLogEvent =
+  | {
+      type: "navigation_completed";
+      ts: number;
+      tabId: number;
+      domain: string;
+      safeUrl: string; // origin + pathname only
+      title?: string;
+    }
+  | {
+      type: "tab_activated";
+      ts: number;
+      tabId: number;
+      domain: string;
+      safeUrl: string;
+      title?: string;
+    }
+  | {
+      type: "dwell_time";
+      ts: number;
+      tabId: number;
+      domain: string;
+      safeUrl: string;
+      durationMs: number;
+    }
+  | {
+      type: "click";
+      ts: number;
+      tabId: number;
+      domain: string;
+      safeUrl: string;
+      tag: string;
+      role?: string;
+      label?: string;
+    };

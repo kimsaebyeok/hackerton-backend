@@ -1,0 +1,71 @@
+-- ===== 설정: 도메인 분류표 =====
+CREATE TABLE domain_category_map (
+  pattern   VARCHAR(255) PRIMARY KEY,        -- 'docs.google.com' 등
+  category  VARCHAR(32)  NOT NULL            -- search/editor/comm_channel...
+);
+
+-- ===== ① 원시 기록 =====
+CREATE TABLE work_session (
+  session_id          UUID PRIMARY KEY,      -- FE가 토글 ON 시 생성
+  user_id             UUID,                  -- 멀티유저 대비(MVP는 null 허용)
+  started_at          TIMESTAMPTZ NOT NULL,
+  ended_at            TIMESTAMPTZ,
+  active_duration_ms  BIGINT,
+  event_count         INTEGER DEFAULT 0,
+  status              VARCHAR(16) NOT NULL DEFAULT 'collecting', -- collecting/closed/analyzed
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE work_log_event (
+  event_id     UUID PRIMARY KEY,             -- FE 생성(오프라인 버퍼+중복방지)
+  session_id   UUID NOT NULL REFERENCES work_session(session_id),
+  type         VARCHAR(32) NOT NULL,         -- ★ 구분자: navigation_completed/tab_activated/dwell_time/click
+  event_time   TIMESTAMPTZ NOT NULL,         -- FE의 epoch(ms)를 ingest 때 변환
+  tab_id       INTEGER NOT NULL,
+  domain       VARCHAR(255) NOT NULL,
+  safe_url     TEXT NOT NULL,                -- origin + pathname (쿼리 없음)
+  -- 분기별 컬럼 (nullable) --
+  title        TEXT,                         -- navigation_completed, tab_activated
+  duration_ms  BIGINT,                       -- dwell_time
+  tag          VARCHAR(64),                  -- click
+  role         VARCHAR(64),                  -- click
+  label        TEXT                          -- click
+);
+CREATE INDEX idx_event_session_time ON work_log_event(session_id, event_time);
+CREATE INDEX idx_event_domain       ON work_log_event(domain);
+CREATE INDEX idx_event_type         ON work_log_event(type);
+
+-- ===== ② 분석 결과 =====
+CREATE TABLE analysis_report (
+  report_id    UUID PRIMARY KEY,
+  session_id   UUID NOT NULL REFERENCES work_session(session_id),
+  metrics      JSONB NOT NULL,               -- 6렌즈 지표 묶음(MetricSet)
+  tasks        JSONB,                        -- 탐지된 작업/시퀀스(렌더용)
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE efficiency_agenda (
+  agenda_id            UUID PRIMARY KEY,
+  report_id            UUID NOT NULL REFERENCES analysis_report(report_id),
+  archetype            VARCHAR(32) NOT NULL, -- data_transfer/monitoring/form_entry/...
+  title                TEXT NOT NULL,
+  one_liner            TEXT,
+  automation_score     NUMERIC(4,3),         -- 0~1
+  est_saving_min_day   INTEGER,
+  priority_score       NUMERIC(6,3),         -- 카드 정렬
+  evidence             JSONB NOT NULL,       -- 근거 지표 묶음
+  agent_spec_draft     JSONB NOT NULL,       -- goal/inputsObserved/missingContext
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_agenda_report ON efficiency_agenda(report_id);
+
+-- ===== ③ 산출물 =====
+CREATE TABLE agent_draft (
+  draft_id          UUID PRIMARY KEY,
+  agenda_id         UUID NOT NULL REFERENCES efficiency_agenda(agenda_id),
+  user_context      JSONB,                   -- 1회성 보정 입력
+  spec_markdown     TEXT NOT NULL,           -- ❶ 명세서
+  context_markdown  TEXT NOT NULL,           -- ❷ 컨텍스트
+  execution_prompt  TEXT NOT NULL,           -- ❸ 프롬프트
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);

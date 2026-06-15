@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: hackerton-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/advisor
+    username: advisor
+    password: advisor
+
+  jackson:
+    default-property-inclusion: non_null    # 클라이언트 계약은 camelCase → 기본 전략 유지
+
+  jpa:
+    hibernate:
+      ddl-auto: validate      # DDL은 Flyway가 소유. Hibernate는 검증만
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    # 마이그레이션 히스토리 테이블은 public 에 두고,
+    # raw/mart 스키마는 V1 마이그레이션이 직접 생성한다.
+    locations: classpath:db/migration
+
+  # Java 21 가상 스레드 (ingest 배치 처리량용)
+  threads:
+    virtual:
+      enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+server:
+  port: 8080
+
+# ── 분석 / 외부 LLM ─────────────────────────────────────────
+advisor:
+  analysis:
+    enabled: false                    # true 면 세션종료 시 L1~L4+LLM 분석 실행. 현재는 수집만 검증
+  llm:
+    provider: openai                  # openai | (확장: gemini, anthropic)
+    base-url: https://api.openai.com
+    api-key: ${ADVISOR_LLM_API_KEY:}  # 환경변수 주입, 커밋 금지
+    model: gpt-4o-mini
+    temperature: 0.2
+    timeout-ms: 30000
