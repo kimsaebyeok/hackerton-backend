@@ -42,12 +42,10 @@ management:
 server:
   port: 8080
 
-# ── 분석 / 외부 LLM ─────────────────────────────────────────
+# ── 외부 LLM (어드바이징 질문/초안 생성용) ───────────────────
 advisor:
-  analysis:
-    enabled: true                     # 세션종료 시 지표계산 + LLM 추천카드 생성 (LLM 키 필요)
   llm:
-    provider: glm                     # glm(Zhipu) | openai — 둘 다 OpenAI 호환 API
+    provider: glm                     # glm(z.ai) — Anthropic 호환 엔드포인트
     base-url: https://api.z.ai/api/anthropic   # z.ai Anthropic 호환 엔드포인트 (/v1/messages)
     api-key: ${ADVISOR_LLM_API_KEY:}  # .env / 환경변수로 주입, 커밋 금지
     model: glm-5.1                    # 예: glm-5.1 | glm-4.6 | glm-4.5

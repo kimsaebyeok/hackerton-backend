@@ -1,22 +1,41 @@
 package com.lawcompany.advisor.repository;
 
+import com.lawcompany.advisor.dto.EfficiencyAgendaView;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * efficiency_agenda 는 다른 애플리케이션이 채운다. 우리는 어드바이징을 위해 읽기만 한다.
+ */
 @Repository
 public class EfficiencyAgendaRepository {
 
-    private static final String INSERT_SQL = """
-            INSERT INTO efficiency_agenda
-                (agenda_id, report_id, archetype, title, one_liner,
-                 automation_score, est_saving_min_day, priority_score, evidence, agent_spec_draft)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), CAST(? AS jsonb))
+    private static final String SELECT_SQL = """
+            SELECT agenda_id, report_id, archetype, title, one_liner,
+                   automation_score, est_saving_min_day, priority_score,
+                   evidence::text         AS evidence,
+                   agent_spec_draft::text AS agent_spec_draft
+            FROM efficiency_agenda
+            WHERE agenda_id = ?
             """;
+
+    private static final RowMapper<EfficiencyAgendaView> MAPPER = (rs, i) -> new EfficiencyAgendaView(
+            rs.getObject("agenda_id", UUID.class),
+            rs.getObject("report_id", UUID.class),
+            rs.getString("archetype"),
+            rs.getString("title"),
+            rs.getString("one_liner"),
+            toDouble(rs.getBigDecimal("automation_score")),
+            (Integer) rs.getObject("est_saving_min_day"),
+            toDouble(rs.getBigDecimal("priority_score")),
+            rs.getString("evidence"),
+            rs.getString("agent_spec_draft")
+    );
 
     private final JdbcTemplate jdbc;
 
@@ -24,28 +43,11 @@ public class EfficiencyAgendaRepository {
         this.jdbc = jdbc;
     }
 
-    public void insert(UUID agendaId, UUID reportId, String archetype, String title, String oneLiner,
-                       Double automationScore, Integer estSavingMinDay, Double priorityScore,
-                       String evidenceJson, String agentSpecJson) {
-        jdbc.update(INSERT_SQL, (PreparedStatement ps) -> {
-            ps.setObject(1, agendaId);
-            ps.setObject(2, reportId);
-            ps.setString(3, archetype);
-            ps.setString(4, title);
-            ps.setString(5, oneLiner);
-            setDoubleOrNull(ps, 6, automationScore);
-            setIntOrNull(ps, 7, estSavingMinDay);
-            setDoubleOrNull(ps, 8, priorityScore);
-            ps.setString(9, evidenceJson);          // NOT NULL → 호출부에서 최소 "{}" 보장
-            ps.setString(10, agentSpecJson);
-        });
+    public Optional<EfficiencyAgendaView> findById(UUID agendaId) {
+        return jdbc.query(SELECT_SQL, MAPPER, agendaId).stream().findFirst();
     }
 
-    private static void setDoubleOrNull(PreparedStatement ps, int i, Double v) throws SQLException {
-        if (v == null) ps.setNull(i, Types.NUMERIC); else ps.setDouble(i, v);
-    }
-
-    private static void setIntOrNull(PreparedStatement ps, int i, Integer v) throws SQLException {
-        if (v == null) ps.setNull(i, Types.INTEGER); else ps.setInt(i, v);
+    private static Double toDouble(BigDecimal b) {
+        return b == null ? null : b.doubleValue();
     }
 }

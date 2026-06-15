@@ -78,10 +78,6 @@ public class WorkSessionRepository {
         return jdbc.query(SUMMARY_SQL, MAPPER, sessionId).stream().findFirst();
     }
 
-    public void markAnalyzed(UUID sessionId) {
-        jdbc.update("UPDATE work_session SET status = 'analyzed' WHERE session_id = ?", sessionId);
-    }
-
     private static Instant toInstant(ResultSet rs, String col) throws SQLException {
         Timestamp t = rs.getTimestamp(col);
         return t == null ? null : t.toInstant();
