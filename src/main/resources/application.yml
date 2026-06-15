@@ -45,11 +45,11 @@ server:
 # ── 분석 / 외부 LLM ─────────────────────────────────────────
 advisor:
   analysis:
-    enabled: false                    # true 면 세션종료 시 L1~L4+LLM 분석 실행. 현재는 수집만 검증
+    enabled: true                     # 세션종료 시 지표계산 + LLM 추천카드 생성 (LLM 키 필요)
   llm:
-    provider: openai                  # openai | (확장: gemini, anthropic)
-    base-url: https://api.openai.com
-    api-key: ${ADVISOR_LLM_API_KEY:}  # 환경변수 주입, 커밋 금지
-    model: gpt-4o-mini
+    provider: glm                     # glm(Zhipu) | openai — 둘 다 OpenAI 호환 API
+    base-url: https://open.bigmodel.cn/api/paas/v4   # OpenAI 사용 시: https://api.openai.com/v1
+    api-key: ${ADVISOR_LLM_API_KEY:}  # .env / 환경변수로 주입, 커밋 금지
+    model: glm-5.1                    # 예: glm-5.1 | glm-4.6 | glm-4.5
     temperature: 0.2
     timeout-ms: 30000

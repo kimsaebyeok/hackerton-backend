@@ -1,13 +1,19 @@
 package com.lawcompany.advisor.repository;
 
+import com.lawcompany.advisor.domain.EventRecord;
 import com.lawcompany.advisor.domain.WorkLogEventRow;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * work_log_event 단건 적재. event_id 는 FE 생성이므로 충돌 시 무시(중복방지).
@@ -29,8 +35,36 @@ public class WorkLogEventRepository {
         this.jdbc = jdbc;
     }
 
+    private static final String SELECT_BY_SESSION_SQL = """
+            SELECT type, event_time, tab_id, domain, safe_url, title, duration_ms, tag, role, label
+            FROM work_log_event
+            WHERE session_id = ?
+            ORDER BY event_time
+            """;
+
+    private static final RowMapper<EventRecord> EVENT_MAPPER = (rs, i) -> new EventRecord(
+            rs.getString("type"),
+            toInstant(rs.getTimestamp("event_time")),
+            (Integer) rs.getObject("tab_id"),
+            rs.getString("domain"),
+            rs.getString("safe_url"),
+            rs.getString("title"),
+            (Long) rs.getObject("duration_ms"),
+            rs.getString("tag"),
+            rs.getString("role"),
+            rs.getString("label")
+    );
+
     public void insert(WorkLogEventRow r) {
         jdbc.update(INSERT_SQL, (PreparedStatement ps) -> bind(ps, r));
+    }
+
+    public List<EventRecord> findBySession(UUID sessionId) {
+        return jdbc.query(SELECT_BY_SESSION_SQL, EVENT_MAPPER, sessionId);
+    }
+
+    private static Instant toInstant(Timestamp t) {
+        return t == null ? null : t.toInstant();
     }
 
     private static void bind(PreparedStatement ps, WorkLogEventRow r) throws SQLException {

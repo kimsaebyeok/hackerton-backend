@@ -38,3 +38,6 @@ build/
 ### Spring ###
 application-local.yml
 *.log
+
+### Secrets ###
+.env
